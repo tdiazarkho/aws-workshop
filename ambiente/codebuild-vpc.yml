@@ -167,15 +167,20 @@ Resources:
 
     #Crear el security group
 
-    FrontendSecurutiyGroup:
-        Type: AWS::EC2::SecurityGroup
-        Properties:   
-            GroupName: "no-ingress-sg"
-            GroupDescription: "Security group with no ingress rule"
-            VpcId: !Ref VPC
-            SecurityGroupIngress:
-              - IpProtocol: tcp
-                    FromPort: '80'
-                    ToPort: '80'
-                    CidrIp: !Ref VPCCIDR
+    WorkshopBucket:
+        Type: "AWS::S3::Bucket"
+        Properties:
+          BucketName: !Sub "workshop.${AWS::AccountId}.edu"
+
+    # FrontendSecurutiyGroup:
+    #     Type: AWS::EC2::SecurityGroup
+    #     Properties:   
+    #         GroupName: "no-ingress-sg"
+    #         GroupDescription: "Security group with no ingress rule"
+    #         VpcId: !Ref VPC
+            # SecurityGroupIngress:
+            #   - IpProtocol: tcp
+            #         FromPort: '80'
+            #         ToPort: '80'
+            #         CidrIp: !Ref VPCCIDR
 
