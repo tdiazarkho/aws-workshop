@@ -152,6 +152,11 @@ Resources:
             RouteTableId: !Ref PrivateRouteTable1
             SubnetId: !Ref PrivateSubnet1
 
+    PrivateSubnet2RouteTableAssociation:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            RouteTableId: !Ref PrivateRouteTable1
+            SubnetId: !Ref PrivateSubnet2
 
     NoIngressSecurityGroup:
         Type: AWS::EC2::SecurityGroup
@@ -160,4 +165,17 @@ Resources:
             GroupDescription: "Security group with no ingress rule"
             VpcId: !Ref VPC
 
+    #Crear el security group
+
+    FrontendSecurutiyGroup:
+        Type: AWS::EC2::SecurityGroup
+        Properties:   
+            GroupName: "no-ingress-sg"
+            GroupDescription: "Security group with no ingress rule"
+            VpcId: !Ref VPC
+            SecurityGroupIngress:
+              - IpProtocol: tcp
+                    FromPort: '80'
+                    ToPort: '80'
+                    CidrIp: !Ref VPCCIDR
 

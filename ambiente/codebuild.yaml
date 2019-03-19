@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description:
+  Despliegue de un compilador Code Build
+
+Parameters:
+  Ambiente: 
+    Type: String
+    Default: DEV
+  VPC:
+    Type: String
+  Subnet:
+    Type: String
+  SecurityGroup:
+    Type: String
+Resources:
+
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            Service: [codebuild.amazonaws.com]
+        Version: '2012-10-17'
+      Path: /
+      Policies:
+        - PolicyName: CodeBuildAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                - 'logs:*'
+                - 'ec2:CreateNetworkInterface'
+                - 'ec2:DescribeNetworkInterfaces'
+                - 'ec2:DeleteNetworkInterface'
+                - 'ec2:DescribeSubnets'
+                - 'ec2:DescribeSecurityGroups'
+                - 'ec2:DescribeDhcpOptions'
+                - 'ec2:DescribeVpcs'
+                - 'ec2:CreateNetworkInterfacePermission'
+                - 's3:*'
+                Effect: Allow
+                Resource: '*'
+
+  BuildCopyCFNProject:
+    Type: AWS::CodeBuild::Project
+    DependsOn: CodeBuildRole
+    Properties:
+      Name:
+        Fn::Sub: BuildCopyCFN-${AWS::StackName}
+      Description: Build to validate and copy CFN templates
+      ServiceRole:
+        Fn::GetAtt: [ CodeBuildRole, Arn ]
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: arkhotech/java
+        EnvironmentVariables:
+          - Name: TEMPLATE_BUCKET
+            Value: test
+          - Name: TEMPLATE_PREFIX
+            Value: codebuild
+      Source:
+        Type: CODEPIPELINE
+      TimeoutInMinutes: 15
+      VpcConfig:
+        VpcId: !Ref VPC
+        Subnets: [!Ref Subnet ]
+        SecurityGroupIds: [!Ref SecurityGroup ]
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: BuildCopyCFN-${AWS::StackName}
+
+Outputs:
+   CodeBuildProject : 
+        Description: A reference to the created VPC
+        Value: !Ref BuildCopyCFNProject
+
