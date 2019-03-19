@@ -1,0 +1,11 @@
+version: 0.0
+os: linux
+files:
+  - source: /src
+    destination: /var/www/html
+
+hooks:
+  ApplicationStart:
+    - location: restart-server.sh
+      timeout: 15
+      runas: root
