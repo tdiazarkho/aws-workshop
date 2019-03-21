@@ -1,14 +1,83 @@
+
+
+# Workshop 1: Devops & Bussines Agility
+
+## Preinstalación
+
+Para comenzar a relizar este taller y los demás dentro de la jornada, se deben bajar los recursos para el taller, que se encuentran en un repositorio Git. Se debe tener el cliente Git (cualquiera disponible) instalado en cada una de las máquinas.
+
+Bajar el código desde la siguiente localización:
+
+```bash
+git clone https://github.com/arkhotech/aws-workshop
+```
+
+Ahora que tenemos el código vamos a isntalar nuestro ambiente de trabajo a través de Cloudformation.  Detalles de Cloudformation, se verán mas adelante en el taller.
+
+#### Crear una politica y un rol para que CF pueda instalar los recursos
+
+Crear un perfil para desplegar el ambiente en el cual vamos a trabajar
+
+```javascript
+{
+    "Version": "2012-10-17",
+    "Statement": [
+    	{
+    		"Effect": "Allow",
+    		"Action" : [
+    			"ec2:*"
+    		],
+    		"Resource": "*"
+    	}
+    ]   
+}
+```
+
+#### Crear esta política y luego crear un rol:
+
+* Ir a IAM y seleccionar nuevo Rol
+* Seleccionar el servicio que va a asumir este rol, en este caso cloudformation
+* Luego seleccionar la politica que ateriormente hemos creado, asociarla al nuevo Rol
+* dar clic en crear.
+
+#### Ejecutar el script de cloudformation
+
+* Ir al servicio "Cloudformation"
+* Seleccionar "Create Stack"
+* Seleccionar **"Upload a template to Amazon S3"** 
+* Buscar el archivo **workshop-vpc1.yaml** y luego dar clic en **"Next"**
+* Llenar los campos **Stack Name**. Todos los demás campos dejarlos tal como están y dar clic en **Next**
+* Dentro del Item **Permissions** 
+
+
+aloja |  lalsls
+------|--------
+asdfas| asdfasdf
+
+
+## Crear 
+
+
+
+## requisitos
+ 
+* Git client
+* aws-client
+* utilitario zip
+
+
+## Comenzando
+
 Crear aplicación Web Java con servicios que puedan ser llamados y probados.
 
 
 
-1.- Aproach es el uso del AWS Cli. Se debe usar en cada cuenta un access key con un rol Adhoc
-
-2.- Crear la policy, seleccionar el servicio codedepply para todos, luego dar el nombre CodedeployDevopsPolicy. (acotar).
+* Aproach es el uso del AWS Cli. Se debe usar en cada cuenta un access key con un rol Adhoc
+* Crear la policy, seleccionar el servicio codedepply para todos, luego dar el nombre CodedeployDevopsPolicy. (acotar).
 
 Agregar con JSON la siguiente politica:
 
-```javascript
+```JSON
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -28,11 +97,9 @@ Agregar con JSON la siguiente politica:
 }
 ```
 
-(Buenas Practicas) Ver:
+(Buenas Practicas) [Ver](https://aws.amazon.com/blogs/security/easier-way-to-control-access-to-aws-regions-using-iam-policies/)
 
-https://aws.amazon.com/blogs/security/easier-way-to-control-access-to-aws-regions-using-iam-policies/
-
-Crear un grupo
+### Crear un grupo
 
 * Ir a IAM y seleccoinar nuevo grupo
 
@@ -44,7 +111,7 @@ Crear un grupo
 
 Ahora con esto podemos desplegar una aplicación 
 
-Crear un usuario
+### Crear un usuario
 
 * Ir a IAM Users
 * clic en add user
@@ -57,17 +124,17 @@ Ahora estamos en condiciones de poder uasar el cliente de Codedeploy
 
 Instalar AWS cli (Desarrollar)
 
-# Crear instancia EC2
+## Crear instancia EC2
 
 En primer lugar vamos a crear un rol y una politica para poder que EC2 pueda trabajar con codedeploy. primero hay que saber que EC2 al menos tiene que tener permisos para poder llegar a S3, por lo que crearemos una politica y un rol para asignarselo a la instancia EC2
 
-## Crear politica ede permiso (o usar una existente)
+### Crear politica ede permiso (o usar una existente)
 
 * Ir a IAM y seleccionar Policy
 * Vamos a usar el editor JSON. Seleccionar el Tab que corresponde a esto
 * Dentro del editor copiar el siguiente Policy Document
 
-```javascript
+```JSON
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -88,7 +155,7 @@ Notese que no hay restricción por Región (desarrollar)
 * Entrar una descripción (opcional)
 * Luego crear Policy
 
-## Crear Rol
+### Crear Rol
 
 * Ir a IAM y dar clic en Roles
 * Create role
@@ -99,7 +166,7 @@ Notese que no hay restricción por Región (desarrollar)
 * Dar el nombre (Ec2CodedeployRole) y la descripción
 
 
-Crear una instancia EC2
+### Crear una instancia EC2
 
 ÇProcederemos a crear una instancia EC2 donde desplegar nuesrta apilcación. Esta simplemente debe tener algunos prerequisitos como lo son tomcat y Java
 
@@ -143,13 +210,13 @@ Crear una instancia EC2
 * Configure security Group
 * Agregra el nombre:  FrontendSG
 * Agregar una descripción (opcional)
-* Agregar que el puerto 22 TCP se pueda ver desde cualquier parte: 0.0.0.0/0
+* Agregar que el puerto 22 TCP se pueda ver desde cualquier parte: __0.0.0.0/0__
 * Finalmente dar clic en siguiente y luego en "Launch"
 * Proceed without Keypairs
 
-### Agregar la politica para que se pueda acceder por SSM
+#### Agregar la politica para que se pueda acceder por SSM (Agreagr)
 
-## Login en la máquina EC2
+### Login en la máquina EC2
 
 * Buscar el grupo "Management & Governance"
 * Seleccionar System Manager
@@ -161,10 +228,13 @@ Crear una instancia EC2
 * ejecutar en el browser la ip de la instancia. Debería despelgar un mensaje Welcome to NGINX
 
 
-# Codedeploy
+## Codedeploy
 
 * Vamos a codedeploy y seleccionamos Application. La nombraremos WorkshopSite
 * El tipo de plataforma será EC2/On-Premises
+
+## Deployment Group
+
 * Ahora vamos a crear una deployment Group
 * Damos el nombre de Deployment Group Name: Se llamará Website
 * Seleccionamos el Rol CodeDeployRole (Verificar los permisos y si se creo anteriormente)
@@ -180,4 +250,42 @@ Crear una instancia EC2
 ## Create deployment
 
 VAmos a crear un deployment para desplegar una app que se encuentra en S3
+
+### Subir aplicación a S3
+
+El despliegue ha creado un bucket llamado **"s3://workshop.{id-cuenta}.edu"** 
+
+* Ir al directorio site1 dentro del repositorio clonado en su máquina local
+* dentro del directorio que debe tener la siguiente estructura:
+
+```
+site1/
+     /appspec.yaml
+     /src
+     /restart-server.sh
+```
+
+* Ahora dentro de este directorio, procederemos a comprimir todo su contenido con el comando .zip: 
+```bash
+zip -r site.zip *
+```
+* Abrir la consola de AWs y seleccionar el servicio S3
+* Seleccionar el Bucket que se ha creado para este taller: workshop.NNNNNNNNN.edu (donde NNNNNN es el número de cuenta de acceso)
+* seleccionar el botón "upload" y subir el archivo site.zip
+* Una vez subido, continuaremos con el deploy
+
+ **Nota:** en este punto se debe revisar el archivo appsepc.yaml  y explicar el hook
+
+## Crear Deployment Group
+
+El deployment Group es el responsable de ejecutar el deply propiamente tal.
+
+* Ir a Codedeply y seleccionar la aplicación que ya hemos creado atenriormente:  **WorkshopSite**
+* Dar clic y seleccionar el Deployment Group
+* Seleccionar "Deployment Group"
+* Seleccionar luego el nombre del deployment group
+* Revision Type debería ser a partir de S3
+* El Location escribir:  s3://workship.NNNNNNN.edu/site.zip.   **NOTA:** (Por ahora vamos a dejar todas las opciones por defecto. Estas heredan del de la configuración de deployment group al cual peretence)
+* Revision Type .zip
+
 
