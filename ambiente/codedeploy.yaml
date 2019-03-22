@@ -1,0 +1,154 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  #   Default: FALP
+  PrefijoAutoscaling:
+    Description: Prefijo de los grupo de AutoScalingGroups
+    Type: String
+    Default: TestApp
+  AdminEmail:
+    Description: Mail del admiistrador de Codedeploy
+    Type: String
+    Default: msilva@arkhotech.com
+  Ambiente:
+    Type: String
+    Default: DEV
+  ApplicationName:
+    Type: String
+    Default: TestApp
+
+# Conditions:
+#     PROD: !Equals [ !Ref Ambiente, PROD ]
+
+Resources:
+  CodeDeployRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+         -  Effect: "Allow"
+            Principal: 
+              Service: 
+                - "codedeploy.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+
+  RolePolicies: 
+    Type: "AWS::IAM::Policy"
+    Properties: 
+      PolicyName: !Join [ "-", [ !Ref Ambiente, "CodeDeployEC2Policy" ]]
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - Effect: "Allow"
+            Action: 
+              - "ec2:*"
+            Resource: "*"
+          - Effect: "Allow"
+            Action: 
+              - "sns:Publish"
+            Resource: "*"
+          - Effect: "Allow"
+            Action:
+              - "elasticloadbalancing:*"
+            Resource: "*"
+          - Effect: "Allow"
+            Action: 
+              - "cloudwatch:*"
+            Resource: "*"
+          - Effect: "Allow"
+            Action: 
+              - "autoscaling:*"
+            Resource: "*"
+          - Effect: "Allow"
+            Action: 
+              - "iam:CreateServiceLinkedRole"
+            Resource: "*"
+            Condition:
+                StringEquals:
+                    iam:AWSServiceName: 
+                       -  "autoscaling.amazonaws.com"
+                       -  "ec2scheduled.amazonaws.com"
+                       -  "elasticloadbalancing.amazonaws.com"
+                       -  "spot.amazonaws.com"
+                       -  "spotfleet.amazonaws.com" 
+          - Effect: "Allow"
+            Action:
+              - "tag:GetTags"
+              - "tag:GetResources"
+              - "cloudwatch:DescribeAlarms"
+              - "cloudwatch:PutMetricAlarm"
+              - "elasticloadbalancing:DescribeLoadBalancers"
+              - "elasticloadbalancing:DescribeInstanceHealth"
+              - "elasticloadbalancing:RegisterInstancesWithLoadBalancer"
+              - "elasticloadbalancing:DeregisterInstancesFromLoadBalancer"
+              - "elasticloadbalancing:DescribeTargetGroups"
+              - "elasticloadbalancing:DescribeTargetHealth"
+              - "elasticloadbalancing:RegisterTargets"
+            Resource: "*"
+      Roles: 
+        - 
+          Ref: "CodeDeployRole"
+
+  DeployTopic:
+    Type: "AWS::SNS::Topic"
+    Description: Envio de notificaciones Codedeploy
+    Properties: 
+        DisplayName: !Join ["-", [ CodeDeploy, !Ref ApplicationName, "Info"  ]]
+        TopicName: !Join ["-", [ CodeDeploy, !Ref ApplicationName, "Info"  ]]
+
+  DeployErrorTopic:
+    Type: "AWS::SNS::Topic"
+    Description: Topic para manejar los errores en deploy
+    Properties: 
+        DisplayName: !Join ["-", [ CodeDeploy, !Ref ApplicationName, "Error"  ]]
+        TopicName: !Join ["-", [ CodeDeploy, !Ref ApplicationName, "Error"  ]]
+  
+  # ApprovalSuscrition:
+  #       Type: "AWS::SNS::Subscription"
+  #       Properties:
+  #           Endpoint: !Ref AdminEmail
+  #           Protocol: email
+  #           TopicArn: !Ref DeployTopic
+
+  CodeDeployApplication:
+    Type: 'AWS::CodeDeploy::Application'
+    DependsOn: RolePolicies
+    Properties:
+      ApplicationName: !Join [ "-", [  !Ref Ambiente, !Ref ApplicationName ]]
+      ComputePlatform: Server
+
+  DeploymentGroup:
+    Type: "AWS::CodeDeploy::DeploymentGroup"
+    Properties:
+      ApplicationName: !Ref CodeDeployApplication
+      AutoScalingGroups:
+        - !Join ["-" , [ !Ref Ambiente, !Ref PrefijoAutoscaling ]]
+      DeploymentGroupName: !Join ["-" , [ !Ref Ambiente,!Ref PrefijoAutoscaling ]]
+      AutoRollbackConfiguration:
+        Enabled: 'true'
+        Events:
+          - DEPLOYMENT_FAILURE
+          - DEPLOYMENT_STOP_ON_REQUEST
+      ServiceRoleArn: !GetAtt CodeDeployRole.Arn
+#DeploymentStart | DeploymentSuccess | DeploymentFailure | DeploymentStop | DeploymentRollback | DeploymentReady | InstanceStart | InstanceSuccess | InstanceFailure | InstanceReady
+      TriggerConfigurations:
+        - TriggerEvents:
+            - DeploymentStart
+            - DeploymentSuccess
+            - InstanceStart
+            - InstanceSuccess
+          TriggerName: DeploymentTrigger
+          TriggerTargetArn: !Ref DeployTopic
+        - TriggerEvents:
+            - DeploymentFailure
+            - InstanceFailure
+          TriggerName: ProcessError
+          TriggerTargetArn: !Ref DeployErrorTopic
+
+
+# Outputs:
+#    ApplicationName:
+#     Description: ARN del topic para manejar eventos de Cloudformation
+#     Value: !Join [ "-", [ !Ref Prefijo, !Ref Ambiente ]]
+

@@ -1,0 +1,24 @@
+AWSTemplateFormatVersion: 2010-09-09
+Mappings:
+  RegionMap:
+    us-east-1:
+      "1" : "ami-04169656fea786776" #Cambiar por la que corresponda
+#    us-east-2:
+#      "1" : "ami-916f59f4"
+Parameters:
+  VpcId: 
+    Type: List<AWS::EC2::VPC::Id>
+
+Resources:
+  ContainerRepo:
+    Type: AWS::ECR::Repository
+    Properties: 
+      RepositoryName: "workshop1"
+
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Join ['-', [workshop , ecs , cluster ]]
+
+
+
