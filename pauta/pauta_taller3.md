@@ -1,8 +1,14 @@
+# Pipeline & Codecommit
 
+En esta parte del taller, se revisará la integración entre codepipeline y codecommit. Los objetivos de esta sección son:
 
+* es crear un repositorio codecommit
+* Crear una cuenta de acceso con los permisos necesarios
+* Inicializar el repositorio
+* Crear una nueva estructura de archivos, usando appspec.yml para despelgar sobre la misma instancia creada en el taller 1.
+* Configuirar y Probar el pipeline haciendo push en el repositorio
 
-
-```javascript
+```JSON
 {
 	["ecr:*"]
 }
@@ -177,11 +183,11 @@ Proseguiremos con el taller y normalizaremos el nuevo repositorio para poder tra
 * Copiar el directorio desde el antiguo repositorio hacia el nuevo (codecomit)
 
 ```bash
-cp aws-workshop/site1/ workshop1/app1
+cp -r aws-workshop/site1/ workshop1/app1
 cd workshop1
-cp app1/appspect.yml .
+mv app1/appspect.yml .
 mkdir scripts
-cp app1/restart-server.sh scripts
+mv app1/restart-server.sh scripts
 ```
 
 * Ahora procedemos a modificar el appspect.yml.
@@ -208,6 +214,7 @@ hooks:
 * Finalmente el repositorio debería verse:
 
 > /
+> > README.md
 > > appspec.yml
 > > script
 > > > restart-server.sh
@@ -216,7 +223,7 @@ hooks:
 > > > > index.html
 
 
-* Ahora estamos en condiciones de proseguir. Guardaremos los cambios y procederemos a subir los cambios. Dentro del nuevo repositorio **workshop1**
+* Ahora estamos en condiciones de proseguir. Procederemos a guardar y subir los cambios. Dentro del nuevo repositorio **workshop1** usando la siguiente serie de comandos.
 
 ```bash
 git add *
@@ -224,45 +231,8 @@ git commit -m 'nuevo repositorio'
 git push origin master
 ```
 
+Una vez que hemos hecho push en el repositorio, este automáticamente debe haber iniciado el pipeline.
 
-### Formato de la imagen ECS:
-
-{{ACCOUNT_ID}}.dkr.ecr.us-east-1.amazonaws.com/workshop1
-
-Construir la imagen que se usará en el servicio
-
-```
-docker build . -t 1234567890.dkr.ecr.us-east-1.amazonaws.com/workshop1
-```
-
-La imagen ahora se comanzará a construir a partir del archivo Dockerfile. Esta será nuestra imagen base
-
-```bash
-Sending build context to Docker daemon  2.048kB
-Step 1/1 : FROM java
-latest: Pulling from library/java
-5040bd298390: Pull complete 
-fce5728aad85: Pull complete 
-76610ec20bf5: Pull complete 
-60170fec2151: Pull complete 
-e98f73de8f0d: Pull complete 
-11f7af24ed9c: Pull complete 
-49e2d6393f32: Pull complete 
-bb9cdec9c7f3: Pull complete 
-Digest: sha256:c1ff613e8ba25833d2e1940da0940c3824f03f802c449f3d1815a66b7f8c0e9d
-Status: Downloaded newer image for java:latest
- ---> d23bdf5b1b1b
-Successfully built d23bdf5b1b1b
-Successfully tagged 903272718619.dkr.ecr.us-east-1.amazonaws.com/workshop1:latest
-```
-Subir la imagen al repositoreio ECS con el comando docker push:
-
-```bash
-$(aws ecr get-login --no-include-email --region us-east-1)
-docker push  903272718619.dkr.ecr.us-east-1.amazonaws.com
-```
+![Succesfull deployment](../img/codecommit/deploy_succesful.png)
 
 
-#### Crear usuaurio para Devops con acceso a cliente
-
-![nuevo usuario](../img/devops-user/new-user.png)

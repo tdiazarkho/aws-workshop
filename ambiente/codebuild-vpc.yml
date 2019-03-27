@@ -1,3 +1,4 @@
+AWSTemplateFormatVersion: "2010-09-09"
 
 Description: 
     VPC para taller de AWS
@@ -32,6 +33,8 @@ Resources:
     VPC: 
         Type: AWS::EC2::VPC
         Properties:
+            EnableDnsSupport : true
+            EnableDnsHostnames : true
             CidrBlock: !Ref VpcCIDR
             Tags: 
                 - Key: Name 
@@ -172,15 +175,69 @@ Resources:
         Properties:
           BucketName: !Sub "workshop.${AWS::AccountId}.edu"
 
-    # FrontendSecurutiyGroup:
-    #     Type: AWS::EC2::SecurityGroup
-    #     Properties:   
-    #         GroupName: "no-ingress-sg"
-    #         GroupDescription: "Security group with no ingress rule"
-    #         VpcId: !Ref VPC
-            # SecurityGroupIngress:
-            #   - IpProtocol: tcp
-            #         FromPort: '80'
-            #         ToPort: '80'
-            #         CidrIp: !Ref VPCCIDR
+    LoadBalancer:
+        Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+        Properties:
+            Name: !Join ['-', [!Ref EnvironmentName ,elb ]]
+            Subnets: #!Ref Subnets
+            - !Ref PublicSubnet1
+            - !Ref PublicSubnet2
+            SecurityGroups:
+            - !Ref FrontendSecurityGroup
+            Tags:
+            - Key: Name
+              Value:  !Join ['-', [!Ref EnvironmentName ,elb ]]
+
+    LoadBalancerListener:
+        Type: AWS::ElasticLoadBalancingV2::Listener
+        DependsOn: LoadBalancer
+        Properties:
+            LoadBalancerArn: !Ref LoadBalancer
+            Port: 80
+            Protocol: HTTP
+            DefaultActions:
+            - Type: forward
+              TargetGroupArn: !Ref ECSTargetGroup1
+
+    ECSTargetGroup1:
+        Type: AWS::ElasticLoadBalancingV2::TargetGroup
+        DependsOn: LoadBalancer
+        Properties:
+            Name: !Join ['-', [!Ref EnvironmentName, TargetGroup1 ]]
+            VpcId: !Ref VPC
+            Port: 80
+            Protocol: HTTP
+            HealthCheckIntervalSeconds: 6
+            HealthCheckPath: /
+            HealthCheckProtocol: HTTP
+            HealthCheckTimeoutSeconds: 5
+            HealthyThresholdCount: 2
+            TargetType: ip 
+
+    ECSTargetGroup2:
+        Type: AWS::ElasticLoadBalancingV2::TargetGroup
+        DependsOn: LoadBalancer
+        Properties:
+            Name: !Join ['-', [!Ref EnvironmentName, TargetGroup2 ]]
+            VpcId: !Ref VPC
+            Port: 80
+            Protocol: HTTP
+            HealthCheckIntervalSeconds: 6
+            HealthCheckPath: /
+            HealthCheckProtocol: HTTP
+            HealthCheckTimeoutSeconds: 5
+            HealthyThresholdCount: 2
+            TargetType: ip 
+
+    FrontendSecurityGroup:
+        Type: AWS::EC2::SecurityGroup
+        Properties:   
+            GroupName: "FrontendSecurityGroup"
+            GroupDescription: "Grupo de seguridad para FrontEnd"
+            VpcId: !Ref VPC
+            SecurityGroupIngress:
+                - IpProtocol: tcp
+                  FromPort: '80'
+                  ToPort: '80'
+                  CidrIp: !Ref VpcCIDR
 

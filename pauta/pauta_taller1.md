@@ -1,22 +1,45 @@
-
-
 # Workshop 1: Devops & Bussines Agility
 
-## Preinstalación
 
-Para comenzar a relizar este taller y los demás dentro de la jornada, se deben bajar los recursos para el taller, que se encuentran en un repositorio Git. Se debe tener el cliente Git (cualquiera disponible) instalado en cada una de las máquinas.
+## Requisitos de Software para el taller
 
-Bajar el código desde la siguiente localización:
+Para comenzar con el taller, debemos tener previamente instalados las siguientes herramientas:
+ 
+* **Git client** ([instalar](https://git-scm.com/downloads))
+* **aws-client** ([windows](https://docs.aws.amazon.com/cli/latest/userguide/install-windows.html), [MacOSX](https://docs.aws.amazon.com/cli/latest/userguide/install-macos.html), [Linux](https://docs.aws.amazon.com/cli/latest/userguide/install-linux.html))
+* **Utilitario zip** ([Instalar](https://www.nchsoftware.com/zip/index.html?kw=how%20do%20you%20unzip%20a%20file%20mac&gclid=EAIaIQobChMIh9aMyqmg4QIVlYaRCh0HDAppEAAYASAAEgIi5vD_BwE))
+
+
+
+## Comenzando con el taller
+
+Para comenzar, vamos a bajar desde el repositorio todos los elementos necesarios para realizarlo desde un repositorio Git. Todo el material del taller se encuentra en este repositorio, por lo que se necesita tener previamente instalado el cliente Git.
+
+Ubicación del repositorio:
 
 ```bash
 git clone https://github.com/arkhotech/aws-workshop
 ```
 
-Ahora que tenemos el código vamos a isntalar nuestro ambiente de trabajo a través de Cloudformation.  Detalles de Cloudformation, se verán mas adelante en el taller.
+Una vez descargado el repositorio procederemos a cargar el ambiente de trabajo en la nube. El ambiente se despliega desde un script de cloudformation, por lo que primero debemos hacer el setup correspondiente para que el script se pueda ejecutar.
 
-#### Crear una politica y un rol para que CF pueda instalar los recursos
+**La primera actividad es crear un perfil para que Cloudformation pueda crear recursos:**
 
-Crear un perfil para desplegar el ambiente en el cual vamos a trabajar
+El script de Cloudformation necesita de un rol y una política de acceso para poder funcionar correctamente.  Cada rol debería tener asociada una política de acceso que indica las acciones que puede ejecutar el rol sobre los servicios.
+
+#### Crear Política
+
+Antes de crear el rol, crearemos una politica que nos de acceso a crear recursos sobre el servicio EC2, los que implican: VPC, Networking, Secguridad y recursos como instancias EC2.
+
+Para crear la política debemos ingresar al servicio IAM:
+
+* Seleccionar **Policies**
+* Dar clic en **Create policy**, se abrirá el editor de políticas con 2 opciones de edición: **Visual editor** y **JSON**
+* para este ejemplo usaremos **JSON**
+
+![edit policy](../img/cf/edit_policy.png)
+
+* Borrar todo lo que dice hay en el editor, copiar la politica en formato JSON que se muestra a continuación y pegar en el editor:
 
 ```javascript
 {
@@ -32,107 +55,83 @@ Crear un perfil para desplegar el ambiente en el cual vamos a trabajar
     ]   
 }
 ```
+* El resultado debe verse como sigue:
 
-#### Crear esta política y luego crear un rol:
+![edit policy](../img/cf/policy_edited.png)
 
-* Ir a IAM y seleccionar nuevo Rol
-* Seleccionar el servicio que va a asumir este rol, en este caso cloudformation
-* Luego seleccionar la politica que ateriormente hemos creado, asociarla al nuevo Rol
-* dar clic en crear.
+* Dar clic en **Review policy**
+* Dar el nombre **CloudFormationpolicy**
+
+![edit policy](../img/cf/policy_name.png)
+
+* Finalmente dar clic en **Create policy** para crear la política.
+
+#### Crear rol y asociar política:
+
+Arhora que la politica de ejecución para cloudformation esta creada, crear un rol.
+
+* Ir al servicio IAM y seleccionar **Create role**
+* En la siguiente pantalla:
+	* En **Select type of trusted entity** dejar **AWS service**
+	* Seleccionar el servicio **Cloudformation** bajo **Choose the service that will use this role**. Esto permite que cloudformation asuma el rol que estamos creando.
+* Dar clic en **Next Permissions** 
+* En la siguiente pantalla, escribir el nombre del rol que hemos creado anteriormente (_**cloudFormationPolicy**_), en el cuadro de texto **Filter policies**
+* Dar clic en el checkbox en la política _**cloudFormationPolicy**_
+* Dar clic en **Tags**. No agregaremos tags en este taller. Dar clic en **Next: Review**
+* En el cuadro **Role name** agregaremos un nombre:  **cloudformationRole**
+* En descripción (opcional) agregaremos algún texto descriptivo
+* Dar clic en **Create role**
 
 #### Ejecutar el script de cloudformation
 
 * Ir al servicio "Cloudformation"
 * Seleccionar "Create Stack"
+
+![new Stack](../img/cf/new_stack.png)
+
 * Seleccionar **"Upload a template to Amazon S3"** 
-* Buscar el archivo **workshop-vpc1.yaml** y luego dar clic en **"Next"**
+
+![new Stack](../img/cf/upload_script.png)
+
+* Buscar el archivo **workshop-vpc1.yaml** ubicado en el directorio "ambiente" del repositorio que hemos descargado de Git, y luego dar clic en **"Next"**
 * Llenar los campos **Stack Name**. Todos los demás campos dejarlos tal como están y dar clic en **Next**
-* Dentro del Item **Permissions** 
+* Dentro del Item **Permissions**, seleccionar el rol CloudformationRole (que hemos creado anteriormente)
+
+![new Stack](../img/cf/cf_role.png)
+
+* En la siguiente pantalla (overview), seleccionar **Create**
+
+El proceso de creación tomará unos 2 o 3 minutos. 
+
+#### Infraestructura
+
+Al terminar la ejecución del script de Cloudformation, este creará la infraestructura del taller, tal como se puede ver en el siguiente diagrama:
+
+![](../img/vpc/vpc_init.png) 
 
 
-aloja |  lalsls
-------|--------
-asdfas| asdfasdf
+# Iniciando el taller: Codedeploy
 
+Ahora que tenemos las infraestructura procederemos a crear manualmente una instancia EC2 la cual cumplirá el rol de nuestro servidor de aplicaciones en el taller.  Este aproach será simple e irá aumentando en profundidad a lo que avanza el taller.
 
-## Crear 
+El objetivo de esta sección es iniciar al usuario en el despliegue automático de aplicaciones en un servidor. Para esto usaremos una instancia EC2 y Codedeploy que simulará ser nuestro servidor de aplicaciones. 
+Esta instancia tendrá instalado un servicio Nginx y se desplegará una simple pagina Web de tipo "hello world" para que el usuario pueda observar algunos detalles del despliegue. Adicionalmente, a modo de introducción solo se usarán las funcionalidades mas simples de Codedeploy.
 
+## Rol de instancia EC2
 
+Antes de crear la instancia EC2, debemos crear un **Rol** y una **Política**. El motivo de por que se debe crear este rol es por que la instancia EC2 necesita tener acceso a S3 para interactuar con **Codedeploy**. En caso de que la instancia no tenga acceso a S3, el despliegue fallará por timeout.
 
-## requisitos
- 
-* Git client
-* aws-client
-* utilitario zip
+### Política EC2 pra Codedeploy
 
+Para crear la política: 
 
-## Comenzando
+* Acceder al servicio IAM, y seleccionar Policies
+* Dar clic en Create policy, se abrirá el editor de políticas con 2 opciones de edición: Visual editor y JSON
+* Al igual que el rol que cremos anteriormente, usaremos JSON
 
-Crear aplicación Web Java con servicios que puedan ser llamados y probados.
+![edit policy](../img/cf/edit_policy.png)
 
-
-
-* Aproach es el uso del AWS Cli. Se debe usar en cada cuenta un access key con un rol Adhoc
-* Crear la policy, seleccionar el servicio codedepply para todos, luego dar el nombre CodedeployDevopsPolicy. (acotar).
-
-Agregar con JSON la siguiente politica:
-
-```JSON
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "codedeploy:*"
-            ],
-            "Resource": "*",
-            "Condition": {
-                "StringEquals": {
-                    "aws:RequestedRegion": "us-east-1"
-                }
-            }
-        }
-    ]
-}
-```
-
-(Buenas Practicas) [Ver](https://aws.amazon.com/blogs/security/easier-way-to-control-access-to-aws-regions-using-iam-policies/)
-
-### Crear un grupo
-
-* Ir a IAM y seleccoinar nuevo grupo
-
-* Darle un nombre al grupo: DevopsGroup
-
-* En attach policy, escribir en el filtro el nombre de la Policy creada anteriormente:  CodedeployPolicy
-
-* DAr clic en next step y luego Create Group
-
-Ahora con esto podemos desplegar una aplicación 
-
-### Crear un usuario
-
-* Ir a IAM Users
-* clic en add user
-* Seleccionar un usuario o crear un usuario
-* Selccionar clic en GRoup
-* AddUser to group
-* Selecconar el grupo DevopsGroup
-
-Ahora estamos en condiciones de poder uasar el cliente de Codedeploy
-
-Instalar AWS cli (Desarrollar)
-
-## Crear instancia EC2
-
-En primer lugar vamos a crear un rol y una politica para poder que EC2 pueda trabajar con codedeploy. primero hay que saber que EC2 al menos tiene que tener permisos para poder llegar a S3, por lo que crearemos una politica y un rol para asignarselo a la instancia EC2
-
-### Crear politica ede permiso (o usar una existente)
-
-* Ir a IAM y seleccionar Policy
-* Vamos a usar el editor JSON. Seleccionar el Tab que corresponde a esto
-* Dentro del editor copiar el siguiente Policy Document
+* Eliminamos el contenido, copiamos el snipet que se muestra a continuación y pegamos en el editor.
 
 ```JSON
 {
@@ -147,41 +146,61 @@ En primer lugar vamos a crear un rol y una politica para poder que EC2 pueda tra
         }
     ]
 }
-
 ```
-Notese que no hay restricción por Región (desarrollar)
+* Dar clic en **Review policy**
+* En el siguiente formulario agregar el no mbre **Ec2CodeployPolicy**, agregar una descripción descripción (opcional) y dar clic en **Create policy**
 
-* Dar el nombre de la policy: Ec2CodeployRole
-* Entrar una descripción (opcional)
-* Luego crear Policy
+Ahora debemos crear el rol y asociar la politica recién creada.
 
-### Crear Rol
+### Crear Rol para EC2
 
-* Ir a IAM y dar clic en Roles
-* Create role
-* En donde dice "Choose the service that will use this role", dar clic en EC2 (es el servicio que va a tomar ese rol)
-* Next Permission
-* En search agregar el nombre del Role que hemos creado anteriormente
-* Seleccionar y dar clic en Next: tags
-* Dar el nombre (Ec2CodedeployRole) y la descripción
+* Ir al servicio IAM y dar clic en Roles.
+* Luego dar clic en **Create role**
+* Bajo el item que dice **_"Choose the service that will use this role"_**, seleccionar el servicio EC2. en este caso es el servicio que va a asumir ese rol.
+* Dar clic en **Next Permission**.
+* En el cuadro de texto **search** escribir el nombre que se le dió a la politica (Policy) creado anteriormente: **Ec2CodeployPolicy**. Dar clic en el checkbox para seleccionar.
+* Dar clic en Tags. No agregaremos Tags en esta parte del taller.
+* Asignamos el nombre para el nuevo rol (**Ec2CodedeployRole**) y una descripción opcional.
+* Dar clic en **Create role**
 
 
 ### Crear una instancia EC2
 
-ÇProcederemos a crear una instancia EC2 donde desplegar nuesrta apilcación. Esta simplemente debe tener algunos prerequisitos como lo son tomcat y Java
+Una vez creada la politica y el rol, procederemos a crear una instancia EC2 sobre la cual vamos a desplegar nuesrta aplicación.  Para realizar esta actividad:
 
+* Ir al servicio **EC2**.
+* Crear un nueva instancia **Launch instance**.
+* Seleccionar: **_Ubuntu Server 18.04 LTS (HVM), SSD Volume Type - ami-0a313d6098716f372 (64-bit x86) / ami-01ac7d9c1179d7b74_** 
 
-* Ir al servicio EC2
-* Crear un nueva instancia "launch instance"
-* Seleccionar: Ubuntu Server 18.04 LTS (HVM), SSD Volume Type - ami-0a313d6098716f372 (64-bit x86) / ami-01ac7d9c1179d7b74 
-* Seleccionaremos una instancia de tipo small
-* Seleccionar 1 en number of instances
-* Network: seleccionar la VPC que se ha creado para su cuenta con nombre workshop
+![](../img/cf/instance-ec2.png)
+
+* Seleccionaremos una instancia de tipo **t2.micro**.
+* En número de instancias, establecer en 1.
+* Sobre **Network**: seleccionar la VPC que hemso creado con Cloudformation. Este debe tener el nombre Workshop 
+
+![](../img/cf/ec2-vpc.png)
+
+> **NOTA:** _El nombre de la VPC se establece en el momento de ejecutar el script de cloudformation.
+
 * Seleccionar una de las redes publicas (detallar)
-* Seleccionar auto-asign Public IP en "enabled"
-* En IAM role seleccionar el rol que creamos para esta instancia  (Ec2CodedeployRole)
-* Dejar tal como están todos los campos a excepción de "Advanced Details". Abrir ese item
-* Donde dice "User Data", copiar el siguiente código
+
+![](../img/cf/ec2-subnets.png)
+
+* Seleccionar **Auto-asign Public IP** con el valor **enabled**
+
+![](../img/cf/autoassing-ip.png)
+
+* En IAM role seleccionar el rol que creamos para esta instancia (**Ec2CodedeployRole**).
+
+![](../img/cf/ec2-role.png)
+
+
+
+* Dejar los siguientes campos sin cambios a excepción de **Advanced Details**. 
+
+![](../img/cf/advanced-details.png)
+
+* Abrir el item y en el cuadro **User data**, copiar el siguiente código
 
 ```bash
 	#!/bin/bash 
@@ -205,22 +224,64 @@ Notese que no hay restricción por Región (desarrollar)
 ```
 
 
-* Add Storage y seleccione 30 en Size (GiB). DEjar los demás campos por defecto.
-* Agregar un Tag llamado "Name" y escribir el nombre "WorkshopI1"
-* Configure security Group
-* Agregra el nombre:  FrontendSG
-* Agregar una descripción (opcional)
-* Agregar que el puerto 22 TCP se pueda ver desde cualquier parte: __0.0.0.0/0__
-* Finalmente dar clic en siguiente y luego en "Launch"
-* Proceed without Keypairs
+> **NOTA:** El código que se muestra en el snipet anterior, son instrucciones que se ejecutan al momento de crear la instancia EC2 por parte de AWS, de manera que una vez que la instancia está en estado _Running_ todas las librerías y servicios ya deben estar instalados. En este caso se instalaron 2 servicios: SSM para acceso por consola AWS y el agente de Codedeploy.
 
-#### Agregar la politica para que se pueda acceder por SSM (Agreagr)
+* Debe quedar de la siguiente forma:
+
+![user data](../img/cf/user-data.png)
+
+* Add Storage, y seleccione 30 en Size (GiB). Dejar los demás campos sin cambios. Dar clic en **Next: Add Tags**.
+
+![user data](../img/cf/storage.png)
+
+* Agregar un Tag haciendo clic en el botón **Add Tag**.
+	* En la columna Key darle el nombre "Name" 
+	* En la columna Value escribir "Workshop1"
+
+![user data](../img/cf/tags.png)
+
+* Dar clic en **Next: Configure Security Group** Configure security Group, dar clic en **Select existing Group**y dar clic en el grupo **FrontendSecurityGroup**
+
+![user data](../img/cf/security-group.png)
+
+> **NOTA:** Este grupo se ha creado al momento de crear la infraestructura por parte del servicio de cloudformation.
+
+* Finalmente dar clic en **Review and Launch**, y finalmente en **Launch**
+* En el momento de preguntar por el Keypairs, Proceed without Keypairs y confirmar.
+
+![](../img/cf/keypairs.png)
+
+> **NOTA:** Este Keypair se usan para acceder a la máquina a través de SSH, pero para este taller la máquina se configurará para acceder a través del servicio SSM.
+
+#### Agregar la política para que se pueda acceder por SSM
+
+Ahora que tenemos la máquina EC2 lista para usar, necesitamos que esta pueda ser accedida por consola ssh.  Para esto usaremos el servicio _**Session Manager**_ que es parte de las herramientas administrativas del servicio [**AWS System Manager**](https://aws.amazon.com/systems-manager). El servicio Session Manager nos da la posibilidad de abrir sesión de consola sobre una instancia Linux, usando nuestro browser. 
+
+Para que una instancia pueda ser accedida a través de este servicio debe cumplir con 2 requisitos:
+
+1.- Tener instalado el **ssm-agent**. Recordar que se ha instalado al momento de crear la instancia.
+
+2.- La máquina debe tener asociado el rol para poder acceder al servicio SSM.
+
+Para lograr esto, asociaremos el rol que usa la instancia a la política que necesita para poder usar el servicio SSM:
+
+* En el servicios IAM abrimos el item **Roles**.
+* Buscar el rol que usa la instancia. En este caso **Ec2CodedeployRole**.
+* Hacer clic en el botón **Attach policies**
+* Buscar la politica **AmazonEC2RoleforSSM**, seleccionar el checkbox y dar clic en el botón **Attach policy**
+
+![](../img/cf/attach-ssm.png)
 
 ### Login en la máquina EC2
 
-* Buscar el grupo "Management & Governance"
-* Seleccionar System Manager
-* Luego Session manager y seleccionar "start session"
+Ahora probaremos el acceso a la máquina a través del servicio SSM:
+
+* En la consola de AWS buscar el grupo **Management & Governance**.
+* Seleccionar **System Manager** bajo este item.
+* Una vez dentro de la consola de **System Manager**, seleccionar **Session manager**
+
+
+ y seleccionar "start session"
 * Selecionar la maquina con el nombre que se le dio al tag "Name"
 * Seleccionar start session
 * Ejecutar sudo su ubuntu
@@ -289,3 +350,58 @@ El deployment Group es el responsable de ejecutar el deply propiamente tal.
 * Revision Type .zip
 
 
+
+# Apendice A
+
+
+* Aproach es el uso del AWS Cli. Se debe usar en cada cuenta un access key con un rol Adhoc
+* Crear la policy, seleccionar el servicio codedepply para todos, luego dar el nombre CodedeployDevopsPolicy. (acotar).
+
+Agregar con JSON la siguiente politica:
+
+```JSON
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "codedeploy:*"
+            ],
+            "Resource": "*",
+            "Condition": {
+                "StringEquals": {
+                    "aws:RequestedRegion": "us-east-1"
+                }
+            }
+        }
+    ]
+}
+```
+
+(Buenas Prácticas) [Ver](https://aws.amazon.com/blogs/security/easier-way-to-control-access-to-aws-regions-using-iam-policies/)
+
+### Crear un grupo
+
+* Ir a IAM y seleccoinar nuevo grupo
+
+* Darle un nombre al grupo: DevopsGroup
+
+* En attach policy, escribir en el filtro el nombre de la Policy creada anteriormente:  CodedeployPolicy
+
+* DAr clic en next step y luego Create Group
+
+Ahora con esto podemos desplegar una aplicación 
+
+### Crear un usuario
+
+* Ir a IAM Users
+* clic en add user
+* Seleccionar un usuario o crear un usuario
+* Selccionar clic en GRoup
+* AddUser to group
+* Selecconar el grupo DevopsGroup
+
+Ahora estamos en condiciones de poder uasar el cliente de Codedeploy
+
+Instalar AWS cli (Desarrollar)
