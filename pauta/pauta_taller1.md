@@ -3,7 +3,7 @@
 
 ## Requisitos de Software para el taller
 
-Para comenzar con el taller, debemos tener previamente instalados las siguientes herramientas:
+Para comenzar con el taller, debémos tener previamente instalados las siguientes herramientas:
  
 * **Git client** ([instalar](https://git-scm.com/downloads))
 * **aws-client** ([windows](https://docs.aws.amazon.com/cli/latest/userguide/install-windows.html), [MacOSX](https://docs.aws.amazon.com/cli/latest/userguide/install-macos.html), [Linux](https://docs.aws.amazon.com/cli/latest/userguide/install-linux.html))
@@ -280,44 +280,128 @@ Ahora probaremos el acceso a la máquina a través del servicio SSM:
 * Seleccionar **System Manager** bajo este item.
 * Una vez dentro de la consola de **System Manager**, seleccionar **Session manager**
 
+![System Manager](../img/cf/system-manager.png)
 
- y seleccionar "start session"
-* Selecionar la maquina con el nombre que se le dio al tag "Name"
-* Seleccionar start session
-* Ejecutar sudo su ubuntu
-* luego cd y enter
-* ejecutar en el browser la ip de la instancia. Debería despelgar un mensaje Welcome to NGINX
+* Se listarán las sesiones activas (no debería haber niguna). Dar clic en **Start session**
 
+![System Manager](../img/cf/start-session.png)
 
-## Codedeploy
+* Desde la lista, seleccionar la instancia EC2 que anteriormente hemos creado, y dar clic nuevamente en **Start session**. Esta debe abrir en el browser una sesión de consola en la instancia
 
-* Vamos a codedeploy y seleccionamos Application. La nombraremos WorkshopSite
-* El tipo de plataforma será EC2/On-Premises
+![System Manager](../img/cf/console.png)
+
+Ahora vamos a revisar en la isntancia si todo esta instalado correctamente. Ejecutar en la consola los siguientes comandos:
+
+```bash
+
+sudo su ubuntu
+
+cd 
+
+ps -fea | grep ssm
+
+#REsultado:
+root       787     1  0 Mar21 ?        00:02:50 /snap/amazon-ssm-agent/1068/amazon-ssm-agent
+root     30804   787  0 15:23 ?        00:00:00 /snap/amazon-ssm-agent/current/ssm-session-worker msilva-0eeec59f38b335f85
+ssm-user 30814 30804  0 15:23 pts/0    00:00:00 sh
+ubuntu   30852 30835  0 15:26 pts/0    00:00:00 grep --color=auto ssm
+```
+
+Revisar si el agente codedeploy esta activo
+
+```bash
+
+sudo service codedeploy-agent status
+
+#El resultado debe ser el siguiente:
+
+ codedeploy-agent.service - LSB: AWS CodeDeploy Host Agent
+   Loaded: loaded (/etc/init.d/codedeploy-agent; generated)
+   Active: active (running) since Thu 2019-03-21 15:39:35 UTC; 5 days ago
+     Docs: man:systemd-sysv-generator(8)
+    Tasks: 5 (limit: 1152)
+   CGroup: /system.slice/codedeploy-agent.service
+           ├─1100 codedeploy-agent: master 1100
+           └─1104 codedeploy-agent: InstanceAgent::Plugins::CodeDeployPlugin::CommandPoller of master 1100
+
+Mar 21 18:08:28 ip-10-192-10-29 su[2121]: pam_unix(su:session): session opened for user root by (uid=0)
+Mar 21 18:08:28 ip-10-192-10-29 su[2121]: pam_unix(su:session): session closed for user root
+Mar 25 18:24:56 ip-10-192-10-29 su[24262]: Successful su for root by root
+Mar 25 18:24:56 ip-10-192-10-29 su[24262]: + ??? root:root
+Mar 25 18:24:56 ip-10-192-10-29 su[24262]: pam_unix(su:session): session opened for user root by (uid=0)
+Mar 25 18:24:56 ip-10-192-10-29 su[24262]: pam_unix(su:session): session closed for user root
+Mar 25 18:26:14 ip-10-192-10-29 su[24317]: Successful su for root by root
+Mar 25 18:26:14 ip-10-192-10-29 su[24317]: + ??? root:root
+Mar 25 18:26:14 ip-10-192-10-29 su[24317]: pam_unix(su:session): session opened for user root by (uid=0)
+Mar 25 18:26:15 ip-10-192-10-29 su[24317]: pam_unix(su:session): session closed for user root
+
+```
+
+### Check de acceso a Internet
+
+La instancia debe tener instalado el servicio NGINX por defecto, por lo cual debería mostrar la pagina de bienvenida. para hacer este check, debemos obtener su IP publica:
+
+* Ir al servicio EC2 y seleciccionar la máquina Workshop1 (o el nombre que se le dió al momento de crearla)
+* Seleccionar Instancias
+* Verificar en los detalles de la instancia el valor de **Public DNS (IpV4)**
+
+![ip  publica](../img/cf/instance-details.png)
+
+Con el nombre DNS publico verificar si el servicio esta opertivo:   **http://public-dns**
+
+![welcome](../img/cf/welcome-page.png)
+
+Si se puede ver esta página, toda la instalación es un exito.
+
+# Comenzando con Codedeploy
+
+Nuestra primera parte del taller comenzaremos con el despliegue automático de aplicaciones, usando el servicio de Codedeploy. La primera actividad es crear una aplicación:
+
+* Vamos al servicio Codedeploy y seleccionamos Application. La nombraremos **WorkshopSite**.
+* Sobre el tipo de plataforma seleccionaremos EC2/On-Premises.
+
+La aplicación alberga uno o mas _**Deployment Group**_ que son los que efectivamente despliegan aplicaicones. Estos usan el agente **codedeploy-agent** para realizar esta labor, por esa razón debemos asegurar que el agente este ejecutandose correctamente.
 
 ## Deployment Group
 
-* Ahora vamos a crear una deployment Group
-* Damos el nombre de Deployment Group Name: Se llamará Website
-* Seleccionamos el Rol CodeDeployRole (Verificar los permisos y si se creo anteriormente)
-* En esta ocasión no se habalra del Blue/green, solo se hara In-Place
-* Ahora lo mas importante es, identificar la o el grupo de instancias se va a desplegar la aplicación.  Las instancias se identifican por un Tag. en este caso será el nombre de la instancias
-* Selecionaremos el tag Name y el nombre Workshop1
-* Deployment Settings: Explicar las 3 estrategias, seleccionar AllAtOnce, Tambien exolicar "Create deplymnet Configuration"
-* Deshabilitar load alancer ya que no se usará en este ejemplo
-* Explicar los triggers y alarms
-* Explicar rollbacks y deshabilitar
+Una vez creada la aplicación, procederemos a crear nuestro primer Deployment group:
+
+* Dentro de la aplicación, seleccionaremos **Create deployment group**
+
+![deployment](../img/codedeploy/deployment.png)
+
+* En el campo **Deployment Group Name** le asignaremos el nombre **Website**
+* Seleccionamos el Rol **CodeDeployRole** que anteriormente hemos creado.
+* Seleccionar In-Place.
+
+![in-place](../img/codedeploy/in-place.png)
+
+* Bajo environment configuration, seleccionaremos la opción **Amazon EC2 Instances**
+* Para este caso, las instancias se identifican por intermedio de un Tag. El Tag que usaremos sera el nombre de instancia. Por lo tanto:
+	* Usaremos el valor **Name** como Key
+	* Bajo Value, usaremos el nombre de la instancia: **Workshop1** .
+
+![in-place](../img/codedeploy/ec2-instances.png)
+	
+* Sobre el item **Deployment Settings**:, seleccionar AllAtOnce.
+* Deshabilitar load balancer, ya que no se usará en este ejemplo.
+* Dejar todos los demás valores por defecto
 
 
 ## Create deployment
 
-VAmos a crear un deployment para desplegar una app que se encuentra en S3
+El despliegue en esta parte del taller se originará por un cambio hecho en S3, lugar en donde subiremos nuestro código una vez empaquetado.
+
+Al desplegar la plataforma, se ha creado un Bucket llamdo: **"s3://workshop.{id-cuenta}.edu"** 
+
+Donde id-cuenta, es el id de la cuetna con la que se esta trabajando.
 
 ### Subir aplicación a S3
 
-El despliegue ha creado un bucket llamado **"s3://workshop.{id-cuenta}.edu"** 
+El código que usaremos se enceuntra en el reposutorio de materiales del taller que hemos bajado de Git la inicio del taller, para comenzar a preparar el código:
 
-* Ir al directorio site1 dentro del repositorio clonado en su máquina local
-* dentro del directorio que debe tener la siguiente estructura:
+* Ir al directorio **site1** dentro del repositorio clonado en su máquina local.
+* El repositorio clonado, debe tener la siguiente estructura:
 
 ```
 site1/
@@ -326,82 +410,43 @@ site1/
      /restart-server.sh
 ```
 
-* Ahora dentro de este directorio, procederemos a comprimir todo su contenido con el comando .zip: 
+* Dentro del repositorio local, ingresaremos al directorio **site1** y comprimiremos todo su contenido con el comando zip. Ejecutar los siguientes comandos:
+
 ```bash
+cd site1
 zip -r site.zip *
 ```
-* Abrir la consola de AWs y seleccionar el servicio S3
-* Seleccionar el Bucket que se ha creado para este taller: workshop.NNNNNNNNN.edu (donde NNNNNN es el número de cuenta de acceso)
-* seleccionar el botón "upload" y subir el archivo site.zip
-* Una vez subido, continuaremos con el deploy
+* Una vez comprimido, abrir la consola de AWS y seleccionar el servicio S3.
+* Seleccionar el Bucket que se ha creado para este taller: **workshop.NNNNNNNNN.edu **(donde NNNNNN es el número de cuenta de acceso)
+* Dar clic sobre el botón "upload" y subir el archivo site.zip que hemos creado anteriormente.
+* Una vez subido, continuaremos con el deploy.
 
- **Nota:** en este punto se debe revisar el archivo appsepc.yaml  y explicar el hook
 
-## Crear Deployment Group
+## Desplegar la aplicación dede S3
 
-El deployment Group es el responsable de ejecutar el deply propiamente tal.
+Ahora que la aplicación esta empaquetada y en S3, vamos a indicar a Codedeploy que queremos deseplegar la aplicación en la instancia Ec2. Para realizar esto, debemos crear una nueva **Revisión** dentro del **Deployment group**.
 
-* Ir a Codedeply y seleccionar la aplicación que ya hemos creado atenriormente:  **WorkshopSite**
-* Dar clic y seleccionar el Deployment Group
-* Seleccionar "Deployment Group"
+* Ir al servicio Codedeploy y seleccionar la aplicación **WorkshopSite**.
+* Seleccionar el **Deployment group** dentro de la aplicación **WorkshopSite**. El nombre debería ser **Website**.
+* Dar clic en **Deployment Group**
 * Seleccionar luego el nombre del deployment group
-* Revision Type debería ser a partir de S3
-* El Location escribir:  s3://workship.NNNNNNN.edu/site.zip.   **NOTA:** (Por ahora vamos a dejar todas las opciones por defecto. Estas heredan del de la configuración de deployment group al cual peretence)
-* Revision Type .zip
+
+![settings](../img/codedeploy/deployment-settings.png)
+
+* En el campo **Deployment group** seleccionar **Website**
+* En el campo **Revision Type** seleccionar **My application is stored in Amazon S3
+**
+* El Location escribir:  **_s3://workship.NNNNNNN.edu/site.zip_**.   
+* En **Revision file type** seleccionar el valor **.zip**
+* Dar una descripción (opcional)
+* Todos los demás campos dejarlos por defecto y dar clic finalmente en **Create deployment**
+
+Una vez creado el deployment este debería pasar por los estados **In Progress** y finalmente **Succeeded**:
+
+![](../img/codedeploy/deploy-progres.png)
+
+Aplicación desplegada:
+
+![](../img/codedeploy/deploy-succesful.png)
 
 
-
-# Apendice A
-
-
-* Aproach es el uso del AWS Cli. Se debe usar en cada cuenta un access key con un rol Adhoc
-* Crear la policy, seleccionar el servicio codedepply para todos, luego dar el nombre CodedeployDevopsPolicy. (acotar).
-
-Agregar con JSON la siguiente politica:
-
-```JSON
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "codedeploy:*"
-            ],
-            "Resource": "*",
-            "Condition": {
-                "StringEquals": {
-                    "aws:RequestedRegion": "us-east-1"
-                }
-            }
-        }
-    ]
-}
-```
-
-(Buenas Prácticas) [Ver](https://aws.amazon.com/blogs/security/easier-way-to-control-access-to-aws-regions-using-iam-policies/)
-
-### Crear un grupo
-
-* Ir a IAM y seleccoinar nuevo grupo
-
-* Darle un nombre al grupo: DevopsGroup
-
-* En attach policy, escribir en el filtro el nombre de la Policy creada anteriormente:  CodedeployPolicy
-
-* DAr clic en next step y luego Create Group
-
-Ahora con esto podemos desplegar una aplicación 
-
-### Crear un usuario
-
-* Ir a IAM Users
-* clic en add user
-* Seleccionar un usuario o crear un usuario
-* Selccionar clic en GRoup
-* AddUser to group
-* Selecconar el grupo DevopsGroup
-
-Ahora estamos en condiciones de poder uasar el cliente de Codedeploy
-
-Instalar AWS cli (Desarrollar)
